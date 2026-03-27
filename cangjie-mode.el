@@ -19,6 +19,8 @@
     st)
   "Syntax table for `cangjie-mode'.")
 
+;; This seems suspect from a performance point of view and I'm not
+;; sure it's worth the hit even if it wasn't
 (defun cangjie-font-lock-match-property-accessor (limit)
   "Match `get` or `set` as a property accessor before LIMIT."
   (catch 'found
