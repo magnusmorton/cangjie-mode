@@ -19,6 +19,26 @@
     st)
   "Syntax table for `cangjie-mode'.")
 
+(defun cangjie-font-lock-match-property-accessor (limit)
+  "Match `get` or `set` as a property accessor before LIMIT."
+  (catch 'found
+    (while (re-search-forward "^[[:blank:]]*\\(get\\|set\\)\\_>\\s-*(" limit t)
+      (let* ((beg (match-beginning 1))
+             (end (match-end 1))
+             (next-pos (match-end 0))
+             (ppss (syntax-ppss beg))
+             (opener (nth 1 ppss)))
+        (when (and (not (nth 3 ppss))
+                   (not (nth 4 ppss))
+                   opener
+                   (save-excursion
+                     (goto-char opener)
+                     (re-search-backward "\\_<prop\\_>" (line-beginning-position) t)))
+          (set-match-data (list beg end beg end))
+          (goto-char next-pos)
+          (throw 'found t))))
+    nil))
+
 (defvar cangjie-font-lock-keywords
   (list
    ;; Comments
@@ -42,12 +62,15 @@
 		    "super" "static" "struct" "synchronized" "try" "this" "true"
 		    "type" "throw" "This" "unsafe" "Unit" "UInt8" "UInt16"
 		    "UInt32" "UInt64" "UIntNative" "var" "where" "while")
-                  'words) . font-lock-keyword-face)
-   ;; contextual keywords TODO figure out how to do this properly in emacs
-   `(,(regexp-opt '("abstract" "get" "internal" "late" "open" "override"
+	                  'words) . font-lock-keyword-face)
+   ;; Contextual keywords that still need be handled
+   `(,(regexp-opt '("abstract" "internal" "late" "open" "override"
 		    "private" "protected" "public" "redef" "required" "sealed"
-		    "set" "throwing" "with")
+		    "throwing" "with")
 		  'words) . font-lock-keyword-face)
+   ;; Accessor keywords inside a `prop` block.
+   '(cangjie-font-lock-match-property-accessor
+     1 font-lock-keyword-face)
    ;; Variables
    '("[a-zA-Z_][a-zA-Z_0-9]*" . font-lock-variable-name-face)
    ;; Unnamed variables
